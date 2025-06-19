@@ -1,7 +1,26 @@
-import Homepage from './HomePage';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Homepage from './components/HomePage';
+import DiscoverPage from './components/DiscoverPage';
+import CommunityPage from './components/CommunityPage';
+// import MyRecipesPage from './components/MyRecipesPage';
+import './App.css';
 
 function App() {
-  return <Homepage />;
+  return (
+    <Router>
+      <div className="App">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Homepage />} />
+          <Route path="/discover" element={<DiscoverPage />} />
+          <Route path="/community" element={<CommunityPage />} />
+          {/* <Route path="/my-recipes" element={<MyRecipesPage />} /> */}
+        </Routes>
+      </div>
+    </Router>
+  );
 }
 
 export default App;

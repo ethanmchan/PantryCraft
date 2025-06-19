@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Plus, Heart, Bookmark, MessageCircle, Star, TrendingUp, Users, ChefHat, Sparkles } from 'lucide-react';
-import Pasta from './assets/creamygarlicpasta.jpg'
 
 const Homepage = () => {
   const [ingredients, setIngredients] = useState('');
@@ -11,8 +11,8 @@ const Homepage = () => {
     {
       id: 1,
       title: "Creamy Garlic Pasta",
-      author: "John Doe",
-      image: Pasta,
+      author: "Gordon Ramsay",
+      image: "https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=400&h=300&fit=crop",
       likes: 245,
       comments: 18,
       cookTime: "25 min",
@@ -22,7 +22,7 @@ const Homepage = () => {
     {
       id: 2,
       title: "Mediterranean Bowl",
-      author: "Gordon Ramsay",
+      author: "Jamie Oliver",
       image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop",
       likes: 189,
       comments: 12,
@@ -33,7 +33,7 @@ const Homepage = () => {
     {
       id: 3,
       title: "Spicy Thai Curry",
-      author: "Jamie Oliver",
+      author: "Wolf Gang Puck",
       image: "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=400&h=300&fit=crop",
       likes: 312,
       comments: 24,
@@ -54,38 +54,8 @@ const Homepage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-orange-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <ChefHat className="h-8 w-8 text-orange-600" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                PantryCraft
-              </span>
-            </div>
-            
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#" className="text-gray-700 hover:text-orange-600 transition-colors">Discover</a>
-              <a href="#" className="text-gray-700 hover:text-orange-600 transition-colors">Community</a>
-              <a href="#" className="text-gray-700 hover:text-orange-600 transition-colors">My Recipes</a>
-              <a href="#" className="text-gray-700 hover:text-orange-600 transition-colors">My Pantry</a>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-600 hover:text-orange-600 transition-colors">
-                <Search className="h-5 w-5" />
-              </button>
-              <button className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-lg hover:shadow-xl">
-                Sign In
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden">{/* Remove the navigation since it's now in a separate component */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
             <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
@@ -244,9 +214,12 @@ const Homepage = () => {
               </div>
             </div>
 
-            <button className="bg-white text-orange-600 px-8 py-4 rounded-2xl font-semibold hover:bg-orange-50 transition-colors shadow-lg text-lg">
-              Join the Community
-            </button>
+            <Link 
+              to="/discover"
+              className="bg-white text-orange-600 px-8 py-4 rounded-2xl font-semibold hover:bg-orange-50 transition-colors shadow-lg text-lg"
+            >
+              Explore Recipes
+            </Link>
           </div>
         </div>
       </section>
@@ -265,15 +238,18 @@ const Homepage = () => {
               </p>
             </div>
             
-            <div>
-              <h3 className="font-semibold mb-4">Discover</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Browse Recipes</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Categories</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Popular</a></li>
-              </ul>
-            </div>
+            <Link to="/discover">
+              <div>
+                <h3 className="font-semibold mb-4">Discover</h3>
+                <ul className="space-y-2 text-gray-400">
+                  <li><a href="#" className="hover:text-white transition-colors">Browse Recipes</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">Categories</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">Popular</a></li>
+                </ul>
+              </div>
+            </Link>
 
+            <Link to="/community">
             <div>
               <h3 className="font-semibold mb-4">Community</h3>
               <ul className="space-y-2 text-gray-400">
@@ -282,6 +258,7 @@ const Homepage = () => {
                 <li><a href="#" className="hover:text-white transition-colors">Events</a></li>
               </ul>
             </div>
+            </Link>
 
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
