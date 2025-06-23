@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Plus, Heart, Bookmark, MessageCircle, Star, TrendingUp, Users, ChefHat, Sparkles } from 'lucide-react';
+import RecipeCard from '../components/RecipeCard';
 
 const Homepage = () => {
   const [ingredients, setIngredients] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
-  // Mock data for featured recipes
   const featuredRecipes = [
     {
-      id: 1,
+      id: '1',
       title: "Creamy Garlic Pasta",
       author: "Gordon Ramsay",
       image: "https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=400&h=300&fit=crop",
@@ -17,10 +18,11 @@ const Homepage = () => {
       comments: 18,
       cookTime: "25 min",
       difficulty: "Easy",
-      tags: ["pasta", "garlic", "cream"]
+      rating: 4.8,
+      tags: ["pasta", "garlic", "cream", "italian"]
     },
     {
-      id: 2,
+      id: '2',
       title: "Mediterranean Bowl",
       author: "Jamie Oliver",
       image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop",
@@ -28,10 +30,11 @@ const Homepage = () => {
       comments: 12,
       cookTime: "15 min",
       difficulty: "Easy",
-      tags: ["healthy", "vegetables", "quinoa"]
+      rating: 4.6,
+      tags: ["healthy", "vegetables", "quinoa", "mediterranean"]
     },
     {
-      id: 3,
+      id: '3',
       title: "Spicy Thai Curry",
       author: "Wolf Gang Puck",
       image: "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=400&h=300&fit=crop",
@@ -39,23 +42,58 @@ const Homepage = () => {
       comments: 24,
       cookTime: "35 min",
       difficulty: "Medium",
-      tags: ["thai", "spicy", "coconut"]
+      rating: 4.9,
+      tags: ["thai", "spicy", "coconut", "curry"]
     }
   ];
 
   const trendingIngredients = ["Avocado", "Quinoa", "Salmon", "Sweet Potato", "Kale", "Chickpeas"];
 
+  // Recipe interaction handlers
+  const handleLike = (recipeId: string) => {
+    console.log('Liked recipe:', recipeId);
+    // TODO: Implement API call to like recipe
+    // Example: await likeRecipe(recipeId);
+  };
+
+  const handleComment = (recipeId: string) => {
+    console.log('Navigate to comments for recipe:', recipeId);
+    // Navigate to recipe detail page with comments section
+    navigate(`/recipe/${recipeId}#comments`);
+  };
+
+  const handleBookmark = (recipeId: string) => {
+    console.log('Bookmarked recipe:', recipeId);
+    // TODO: Implement API call to bookmark recipe
+    // Example: await bookmarkRecipe(recipeId);
+  };
+
+  const handleCardClick = (recipeId: string) => {
+    console.log('Navigate to recipe detail:', recipeId);
+    // Navigate to recipe detail page
+    navigate(`/recipe/${recipeId}`);
+  };
+
   const handleGenerateRecipe = () => {
     if (ingredients.trim()) {
-      // This would typically navigate to results or trigger recipe generation
-      console.log('Generating recipe with ingredients:', ingredients);
+      // Navigate to recipe generation page with ingredients
+      navigate('/generate', { state: { ingredients: ingredients.trim() } });
     }
+  };
+
+  const handleTrendingIngredientClick = (ingredient: string) => {
+    // Add trending ingredient to input
+    const currentIngredients = ingredients.trim();
+    const newIngredients = currentIngredients 
+      ? `${currentIngredients}, ${ingredient}` 
+      : ingredient;
+    setIngredients(newIngredients);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
       {/* Hero Section */}
-      <section className="relative overflow-hidden">{/* Remove the navigation since it's now in a separate component */}
+      <section className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
             <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
@@ -76,11 +114,13 @@ const Homepage = () => {
                   placeholder="Enter your ingredients (e.g., chicken, rice, broccoli)..."
                   value={ingredients}
                   onChange={(e) => setIngredients(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleGenerateRecipe()}
                   className="w-full px-6 py-4 text-lg rounded-2xl border-2 border-orange-200 focus:border-orange-500 focus:outline-none shadow-lg"
                 />
                 <button
                   onClick={handleGenerateRecipe}
-                  className="absolute right-2 top-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 rounded-xl hover:from-orange-600 hover:to-red-600 transition-all duration-200 flex items-center space-x-2 shadow-md"
+                  disabled={!ingredients.trim()}
+                  className="absolute right-2 top-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 rounded-xl hover:from-orange-600 hover:to-red-600 transition-all duration-200 flex items-center space-x-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Sparkles className="h-5 w-5" />
                   <span>Generate</span>
@@ -94,6 +134,7 @@ const Homepage = () => {
               {trendingIngredients.map((ingredient, index) => (
                 <button
                   key={index}
+                  onClick={() => handleTrendingIngredientClick(ingredient)}
                   className="px-4 py-2 bg-white rounded-full text-sm text-gray-700 hover:bg-orange-100 hover:text-orange-700 transition-colors shadow-sm border border-orange-100"
                 >
                   {ingredient}
@@ -120,7 +161,7 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Featured Recipes */}
+      {/* Featured Recipes - Updated to use RecipeCard component */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -128,62 +169,32 @@ const Homepage = () => {
             <p className="text-xl text-gray-600">Discover what our community is cooking today</p>
           </div>
 
+          {/* Using RecipeCard component instead of hardcoded cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredRecipes.map((recipe) => (
-              <div key={recipe.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden group">
-                <div className="relative">
-                  <img
-                    src={recipe.image}
-                    alt={recipe.title}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full p-2">
-                    <Heart className="h-5 w-5 text-gray-600 hover:text-red-500 transition-colors cursor-pointer" />
-                  </div>
-                </div>
-                
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{recipe.title}</h3>
-                  <p className="text-gray-600 mb-4">by {recipe.author}</p>
-                  
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <span>{recipe.cookTime}</span>
-                      <span>{recipe.difficulty}</span>
-                    </div>
-                    <div className="flex space-x-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {recipe.tags.map((tag, index) => (
-                      <span key={index} className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <Heart className="h-4 w-4" />
-                        <span>{recipe.likes}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <MessageCircle className="h-4 w-4" />
-                        <span>{recipe.comments}</span>
-                      </div>
-                    </div>
-                    <button className="p-2 text-gray-600 hover:text-orange-600 transition-colors">
-                      <Bookmark className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                onLike={handleLike}
+                onComment={handleComment}
+                onBookmark={handleBookmark}
+                onCardClick={handleCardClick}
+                showAuthor={true}
+                showInteractions={true}
+                className="transform hover:-translate-y-2 transition-all duration-300"
+              />
             ))}
+          </div>
+
+          {/* View All Recipes Button */}
+          <div className="text-center mt-12">
+            <Link
+              to="/discover"
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3 rounded-2xl font-semibold hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-lg"
+            >
+              <span>View All Recipes</span>
+              <Search className="h-5 w-5" />
+            </Link>
           </div>
         </div>
       </section>
@@ -238,34 +249,30 @@ const Homepage = () => {
               </p>
             </div>
             
-            <Link to="/discover">
-              <div>
-                <h3 className="font-semibold mb-4">Discover</h3>
-                <ul className="space-y-2 text-gray-400">
-                  <li><a href="#" className="hover:text-white transition-colors">Browse Recipes</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Categories</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Popular</a></li>
-                </ul>
-              </div>
-            </Link>
+            <div>
+              <h3 className="font-semibold mb-4">Discover</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link to="/discover" className="hover:text-white transition-colors">Browse Recipes</Link></li>
+                <li><Link to="/categories" className="hover:text-white transition-colors">Categories</Link></li>
+                <li><Link to="/popular" className="hover:text-white transition-colors">Popular</Link></li>
+              </ul>
+            </div>
 
-            <Link to="/community">
             <div>
               <h3 className="font-semibold mb-4">Community</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Join Community</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Share Recipe</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Events</a></li>
+                <li><Link to="/community" className="hover:text-white transition-colors">Join Community</Link></li>
+                <li><Link to="/share" className="hover:text-white transition-colors">Share Recipe</Link></li>
+                <li><Link to="/events" className="hover:text-white transition-colors">Events</Link></li>
               </ul>
             </div>
-            </Link>
 
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy</a></li>
+                <li><Link to="/help" className="hover:text-white transition-colors">Help Center</Link></li>
+                <li><Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link></li>
               </ul>
             </div>
           </div>

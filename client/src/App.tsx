@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Homepage from './components/HomePage';
-import DiscoverPage from './components/DiscoverPage';
-import CommunityPage from './components/CommunityPage';
+import Navbar from './pages/Navbar';
+import Homepage from './pages/HomePage';
+import DiscoverPage from './pages/DiscoverPage';
+import CommunityPage from './pages/CommunityPage';
 // import MyRecipesPage from './components/MyRecipesPage';
 import './App.css';
 

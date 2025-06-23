@@ -8,6 +8,7 @@ const recipeSchema = new mongoose.Schema({
   comments: Number,
   cookTime: String,
   difficulty: String,
+  rating: Number,
   tags: [String]
 });
 
