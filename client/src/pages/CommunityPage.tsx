@@ -1,587 +1,363 @@
-import React, { useState } from 'react';
-import { Heart, MessageCircle, Bookmark, Share2, MoreHorizontal, Users, TrendingUp, Award, Clock, Star, ChefHat, UserPlus, Eye } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Heart, Clock, Star, ChefHat, Loader2, Plus, X } from 'lucide-react';
+import { Post, TrendingAuthor } from '../types/recipe';
+
+const BASE_URL = import.meta.env.VITE_API_URL;
+
+const POST_TYPES = ['all', 'recipe', 'tip', 'achievement'] as const;
+type FilterType = typeof POST_TYPES[number];
+
+const TYPE_LABELS: Record<string, string> = {
+  all: 'All',
+  recipe: 'Recipes',
+  tip: 'Tips',
+  achievement: 'Achievements',
+};
+
+const TYPE_BADGE: Record<string, string> = {
+  recipe: 'bg-orange-100 text-orange-700',
+  tip: 'bg-blue-100 text-blue-700',
+  achievement: 'bg-purple-100 text-purple-700',
+};
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 const CommunityPage = () => {
-  const [activeTab, setActiveTab] = useState('feed');
-  const [likedPosts, setLikedPosts] = useState(new Set());
-  const [bookmarkedPosts, setBookmarkedPosts] = useState(new Set());
-  const [followedUsers, setFollowedUsers] = useState(new Set([2, 4]));
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [trendingAuthors, setTrendingAuthors] = useState<TrendingAuthor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<FilterType>('all');
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
 
-  // Mock data for community posts
-  const communityPosts = [
-    {
-      id: 1,
-      type: 'recipe',
-      user: {
-        id: 1,
-        name: 'Sarah Chen',
-        username: '@sarahcooks',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=50&h=50&fit=crop&crop=face',
-        verified: true,
-        followers: 2500
-      },
-      timestamp: '2 hours ago',
-      content: {
-        text: "Just tried this amazing fusion recipe combining Korean and Italian flavors! The kimchi carbonara was surprisingly delicious 🍝✨",
-        recipe: {
-          title: 'Kimchi Carbonara Fusion',
-          image: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=500&h=300&fit=crop',
-          cookTime: '20 min',
-          difficulty: 'Medium',
-          rating: 4.8
-        }
-      },
-      stats: {
-        likes: 156,
-        comments: 23,
-        bookmarks: 89,
-        shares: 12
-      }
-    },
-    {
-      id: 2,
-      type: 'achievement',
-      user: {
-        id: 2,
-        name: 'Marcus Johnson',
-        username: '@marcusbakes',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face',
-        verified: false,
-        followers: 890
-      },
-      timestamp: '4 hours ago',
-      content: {
-        text: "Officially earned my 'Master Baker' badge after 50 successful bakes! 🏆 Thanks to everyone who supported my journey!",
-        achievement: {
-          title: 'Master Baker',
-          icon: '🏆',
-          description: '50 successful bakes completed'
-        }
-      },
-      stats: {
-        likes: 78,
-        comments: 15,
-        bookmarks: 12,
-        shares: 5
-      }
-    },
-    {
-      id: 3,
-      type: 'recipe',
-      user: {
-        id: 3,
-        name: 'Elena Rodriguez',
-        username: '@elenaspice',
-        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&h=50&fit=crop&crop=face',
-        verified: true,
-        followers: 4200
-      },
-      timestamp: '6 hours ago',
-      content: {
-        text: "Family taco night never gets old! Here's my grandmother's secret recipe that's been passed down for generations 🌮❤️",
-        recipe: {
-          title: 'Abuela\'s Secret Tacos',
-          image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop',
-          cookTime: '45 min',
-          difficulty: 'Easy',
-          rating: 4.9
-        }
-      },
-      stats: {
-        likes: 234,
-        comments: 41,
-        bookmarks: 167,
-        shares: 28
-      }
-    },
-    {
-      id: 4,
-      type: 'tip',
-      user: {
-        id: 4,
-        name: 'Chef Michael',
-        username: '@chefmike',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop&crop=face',
-        verified: true,
-        followers: 8500
-      },
-      timestamp: '8 hours ago',
-      content: {
-        text: "Pro tip: Always let your meat rest for 5-10 minutes after cooking. This allows the juices to redistribute, resulting in more tender and flavorful cuts! 🥩✨",
-        tip: {
-          category: 'Cooking Technique',
-          difficulty: 'Beginner'
-        }
-      },
-      stats: {
-        likes: 312,
-        comments: 67,
-        bookmarks: 201,
-        shares: 45
-      }
-    },
-    {
-      id: 5,
-      type: 'recipe',
-      user: {
-        id: 5,
-        name: 'Lily Park',
-        username: '@lilyveggies',
-        avatar: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=50&h=50&fit=crop&crop=face',
-        verified: false,
-        followers: 1200
-      },
-      timestamp: '12 hours ago',
-      content: {
-        text: "Meal prep Sunday! These rainbow veggie bowls will keep me energized all week 🌈🥗 Who else loves preparing healthy meals in advance?",
-        recipe: {
-          title: 'Rainbow Veggie Power Bowl',
-          image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=300&fit=crop',
-          cookTime: '25 min',
-          difficulty: 'Easy',
-          rating: 4.7
-        }
-      },
-      stats: {
-        likes: 145,
-        comments: 28,
-        bookmarks: 93,
-        shares: 18
-      }
-    }
-  ];
+  // New post form
+  const [showForm, setShowForm] = useState(false);
+  const [newPost, setNewPost] = useState({ type: 'tip', authorName: '', content: '', recipeId: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
-  // Mock data for trending chefs
-  const trendingChefs = [
-    {
-      id: 1,
-      name: 'Isabella Martinez',
-      username: '@isabellacooks',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=60&h=60&fit=crop&crop=face',
-      speciality: 'Mediterranean',
-      followers: 12500,
-      recipes: 89,
-      verified: true
-    },
-    {
-      id: 2,
-      name: 'David Kim',
-      username: '@davidkitchen',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop&crop=face',
-      speciality: 'Asian Fusion',
-      followers: 8200,
-      recipes: 67,
-      verified: true
-    },
-    {
-      id: 3,
-      name: 'Sophie Williams',
-      username: '@sophiebakes',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=60&h=60&fit=crop&crop=face',
-      speciality: 'Desserts',
-      followers: 15800,
-      recipes: 124,
-      verified: true
-    }
-  ];
+  useEffect(() => {
+    Promise.all([
+      fetch(`${BASE_URL}/api/posts?limit=50`).then((r) => r.json()),
+      fetch(`${BASE_URL}/api/posts/trending-authors`).then((r) => r.json()),
+    ])
+      .then(([postsData, authorsData]) => {
+        setPosts(postsData);
+        const counts: Record<string, number> = {};
+        postsData.forEach((p: Post) => { counts[p._id] = p.likes; });
+        setLikeCounts(counts);
+        setTrendingAuthors(authorsData);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
-  // Mock data for trending topics
-  const trendingTopics = [
-    { tag: '#MealPrepSunday', posts: 1200 },
-    { tag: '#HealthyEating', posts: 2800 },
-    { tag: '#ComfortFood', posts: 890 },
-    { tag: '#VeganRecipes', posts: 1450 },
-    { tag: '#QuickMeals', posts: 2100 }
-  ];
-
-  const handleLike = (postId) => {
-    setLikedPosts(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(postId)) {
-        newSet.delete(postId);
-      } else {
-        newSet.add(postId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleBookmark = (postId) => {
-    setBookmarkedPosts(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(postId)) {
-        newSet.delete(postId);
-      } else {
-        newSet.add(postId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleFollow = (userId) => {
-    setFollowedUsers(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(userId)) {
-        newSet.delete(userId);
-      } else {
-        newSet.add(userId);
-      }
-      return newSet;
-    });
-  };
-
-  const PostCard = ({ post }) => (
-    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-      {/* Post Header */}
-      <div className="p-6 pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <img
-              src={post.user.avatar}
-              alt={post.user.name}
-              className="w-12 h-12 rounded-full object-cover"
-            />
-            <div>
-              <div className="flex items-center space-x-2">
-                <h3 className="font-semibold text-gray-900">{post.user.name}</h3>
-                {post.user.verified && (
-                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                    <div className="w-3 h-3 text-white text-xs">✓</div>
-                  </div>
-                )}
-              </div>
-              <p className="text-sm text-gray-500">{post.user.username} • {post.timestamp}</p>
-            </div>
-          </div>
-          <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-            <MoreHorizontal className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Post Content */}
-      <div className="px-6 pb-4">
-        <p className="text-gray-800 mb-4">{post.content.text}</p>
-
-        {/* Recipe Card */}
-        {post.type === 'recipe' && post.content.recipe && (
-          <div className="border border-gray-200 rounded-xl overflow-hidden mb-4">
-            <img
-              src={post.content.recipe.image}
-              alt={post.content.recipe.title}
-              className="w-full h-48 object-cover"
-            />
-            <div className="p-4">
-              <h4 className="font-semibold text-gray-900 mb-2">{post.content.recipe.title}</h4>
-              <div className="flex items-center space-x-4 text-sm text-gray-500">
-                <div className="flex items-center space-x-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{post.content.recipe.cookTime}</span>
-                </div>
-                <span>{post.content.recipe.difficulty}</span>
-                <div className="flex items-center space-x-1">
-                  <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                  <span>{post.content.recipe.rating}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Achievement Badge */}
-        {post.type === 'achievement' && post.content.achievement && (
-          <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-200 rounded-xl p-4 mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="text-3xl">{post.content.achievement.icon}</div>
-              <div>
-                <h4 className="font-semibold text-gray-900">{post.content.achievement.title}</h4>
-                <p className="text-sm text-gray-600">{post.content.achievement.description}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tip Card */}
-        {post.type === 'tip' && post.content.tip && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                <div className="w-3 h-3 text-white text-xs">💡</div>
-              </div>
-              <span className="text-sm font-medium text-blue-700">{post.content.tip.category}</span>
-              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
-                {post.content.tip.difficulty}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Post Actions */}
-      <div className="px-6 py-4 border-t border-gray-100">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <button
-              onClick={() => handleLike(post.id)}
-              className={`flex items-center space-x-2 transition-colors ${
-                likedPosts.has(post.id) ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
-              }`}
-            >
-              <Heart className={`h-5 w-5 ${likedPosts.has(post.id) ? 'fill-current' : ''}`} />
-              <span className="text-sm">{post.stats.likes}</span>
-            </button>
-            
-            <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors">
-              <MessageCircle className="h-5 w-5" />
-              <span className="text-sm">{post.stats.comments}</span>
-            </button>
-            
-            <button
-              onClick={() => handleBookmark(post.id)}
-              className={`flex items-center space-x-2 transition-colors ${
-                bookmarkedPosts.has(post.id) ? 'text-orange-500' : 'text-gray-500 hover:text-orange-500'
-              }`}
-            >
-              <Bookmark className={`h-5 w-5 ${bookmarkedPosts.has(post.id) ? 'fill-current' : ''}`} />
-              <span className="text-sm">{post.stats.bookmarks}</span>
-            </button>
-          </div>
-          
-          <button className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors">
-            <Share2 className="h-5 w-5" />
-            <span className="text-sm">{post.stats.shares}</span>
-          </button>
-        </div>
-      </div>
-    </div>
+  const filtered = useMemo(
+    () => (activeTab === 'all' ? posts : posts.filter((p) => p.type === activeTab)),
+    [posts, activeTab]
   );
 
-  const ChefCard = ({ chef }) => (
-    <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 p-6">
-      <div className="flex items-center space-x-4 mb-4">
-        <img
-          src={chef.avatar}
-          alt={chef.name}
-          className="w-16 h-16 rounded-full object-cover"
-        />
-        <div className="flex-1">
-          <div className="flex items-center space-x-2">
-            <h3 className="font-semibold text-gray-900">{chef.name}</h3>
-            {chef.verified && (
-              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                <div className="w-3 h-3 text-white text-xs">✓</div>
-              </div>
-            )}
-          </div>
-          <p className="text-sm text-gray-500">{chef.username}</p>
-          <p className="text-sm text-orange-600 font-medium">{chef.speciality}</p>
-        </div>
-      </div>
-      
-      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-        <div className="text-center">
-          <div className="font-semibold text-gray-900">{chef.followers.toLocaleString()}</div>
-          <div>Followers</div>
-        </div>
-        <div className="text-center">
-          <div className="font-semibold text-gray-900">{chef.recipes}</div>
-          <div>Recipes</div>
-        </div>
-      </div>
-      
-      <button
-        onClick={() => handleFollow(chef.id)}
-        className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-          followedUsers.has(chef.id)
-            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            : 'bg-orange-500 text-white hover:bg-orange-600'
-        }`}
-      >
-        {followedUsers.has(chef.id) ? 'Following' : 'Follow'}
-      </button>
-    </div>
-  );
+  const handleLike = async (postId: string) => {
+    const alreadyLiked = likedPosts.has(postId);
+    if (alreadyLiked) return;
+
+    setLikedPosts((prev) => new Set([...prev, postId]));
+    setLikeCounts((prev) => ({ ...prev, [postId]: (prev[postId] ?? 0) + 1 }));
+
+    try {
+      await fetch(`${BASE_URL}/api/posts/${postId}/like`, { method: 'POST' });
+    } catch {
+      setLikedPosts((prev) => { const s = new Set(prev); s.delete(postId); return s; });
+      setLikeCounts((prev) => ({ ...prev, [postId]: (prev[postId] ?? 1) - 1 }));
+    }
+  };
+
+  const handleSubmitPost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPost.authorName.trim() || !newPost.content.trim()) {
+      setFormError('Name and content are required.');
+      return;
+    }
+    setFormError('');
+    setSubmitting(true);
+
+    const body: Record<string, string> = {
+      type: newPost.type,
+      authorName: newPost.authorName.trim(),
+      content: newPost.content.trim(),
+    };
+    if (newPost.recipeId.trim()) body.recipeId = newPost.recipeId.trim();
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/posts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to post');
+      }
+      const created: Post = await res.json();
+      setPosts((prev) => [created, ...prev]);
+      setLikeCounts((prev) => ({ ...prev, [created._id]: 0 }));
+      setNewPost({ type: 'tip', authorName: '', content: '', recipeId: '' });
+      setShowForm(false);
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Failed to post');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Community
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Connect with fellow food enthusiasts, share your culinary creations, and discover inspiration from our vibrant community
-            </p>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Community</h1>
+          <p className="text-gray-600">Share recipes, tips, and cooking achievements with fellow food lovers.</p>
+        </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex justify-center mt-8">
-            <div className="flex space-x-1 bg-gray-100 rounded-xl p-1">
-              {[
-                { id: 'feed', name: 'Community Feed', icon: Users },
-                { id: 'trending', name: 'Trending', icon: TrendingUp },
-                { id: 'chefs', name: 'Featured Chefs', icon: ChefHat }
-              ].map((tab) => {
-                const Icon = tab.icon;
-                return (
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Main feed */}
+          <div className="flex-1 min-w-0">
+            {/* Tabs + New Post */}
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <div className="flex gap-1 bg-white rounded-xl p-1 shadow-sm">
+                {POST_TYPES.map((t) => (
                   <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 px-6 py-3 rounded-lg text-sm font-medium transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-white text-orange-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                    key={t}
+                    onClick={() => setActiveTab(t)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      activeTab === t
+                        ? 'bg-orange-500 text-white'
+                        : 'text-gray-600 hover:text-orange-600'
                     }`}
                   >
-                    <Icon className="h-5 w-5" />
-                    <span>{tab.name}</span>
+                    {TYPE_LABELS[t]}
                   </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Main Feed */}
-          <div className="flex-1">
-            {activeTab === 'feed' && (
-              <div className="space-y-6">
-                {communityPosts.map((post) => (
-                  <PostCard key={post.id} post={post} />
                 ))}
-                
-                {/* Load More Button */}
-                <div className="text-center">
-                  <button className="bg-orange-500 text-white px-8 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
-                    Load More Posts
+              </div>
+              <button
+                onClick={() => setShowForm((v) => !v)}
+                className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-orange-600 hover:to-red-600 transition-all shadow-sm"
+              >
+                {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {showForm ? 'Cancel' : 'New Post'}
+              </button>
+            </div>
+
+            {/* New Post Form */}
+            {showForm && (
+              <form onSubmit={handleSubmitPost} className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-orange-100">
+                <h3 className="font-semibold text-gray-900 mb-4">Share with the community</h3>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Post type</label>
+                      <select
+                        value={newPost.type}
+                        onChange={(e) => setNewPost((p) => ({ ...p, type: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none bg-white"
+                      >
+                        <option value="tip">Tip</option>
+                        <option value="recipe">Recipe Share</option>
+                        <option value="achievement">Achievement</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Your name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Sarah Chen"
+                        value={newPost.authorName}
+                        onChange={(e) => setNewPost((p) => ({ ...p, authorName: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">What's on your mind?</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Share a recipe, cooking tip, or achievement..."
+                      value={newPost.content}
+                      onChange={(e) => setNewPost((p) => ({ ...p, content: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none resize-none"
+                    />
+                  </div>
+
+                  {newPost.type === 'recipe' && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Recipe ID (optional)</label>
+                      <input
+                        type="text"
+                        placeholder="Paste a recipe ID to link it"
+                        value={newPost.recipeId}
+                        onChange={(e) => setNewPost((p) => ({ ...p, recipeId: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                      />
+                    </div>
+                  )}
+
+                  {formError && <p className="text-red-500 text-sm">{formError}</p>}
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-medium text-sm hover:from-orange-600 hover:to-red-600 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Post
                   </button>
                 </div>
-              </div>
+              </form>
             )}
 
-            {activeTab === 'trending' && (
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Trending Topics</h2>
-                <div className="space-y-4">
-                  {trendingTopics.map((topic, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{topic.tag}</h3>
-                        <p className="text-sm text-gray-500">{topic.posts.toLocaleString()} posts</p>
-                      </div>
-                      <TrendingUp className="h-5 w-5 text-orange-500" />
-                    </div>
-                  ))}
-                </div>
+            {/* Feed */}
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((n) => (
+                  <div key={n} className="bg-white rounded-2xl p-6 animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-3" />
+                    <div className="h-4 bg-gray-200 rounded w-full mb-2" />
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  </div>
+                ))}
               </div>
-            )}
-
-            {activeTab === 'chefs' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {trendingChefs.map((chef) => (
-                  <ChefCard key={chef.id} chef={chef} />
+            ) : filtered.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+                <p className="text-gray-400 text-lg mb-2">No posts yet</p>
+                <p className="text-gray-400 text-sm">Be the first to share something with the community!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filtered.map((post) => (
+                  <PostCard
+                    key={post._id}
+                    post={post}
+                    likeCount={likeCounts[post._id] ?? post.likes}
+                    isLiked={likedPosts.has(post._id)}
+                    onLike={() => handleLike(post._id)}
+                  />
                 ))}
               </div>
             )}
           </div>
 
           {/* Sidebar */}
-          <div className="lg:w-80 space-y-6">
-            {/* Community Stats */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Community Stats</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                      <Users className="h-5 w-5 text-orange-600" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">25,847</div>
-                      <div className="text-sm text-gray-500">Active Cooks</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <ChefHat className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">1,234</div>
-                      <div className="text-sm text-gray-500">Recipes Today</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Eye className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">89,456</div>
-                      <div className="text-sm text-gray-500">Recipe Views</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <aside className="lg:w-72 shrink-0">
+            <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-24">
+              <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-2">
+                <ChefHat className="h-5 w-5 text-orange-500" />
+                Top Chefs
+              </h3>
+              {trendingAuthors.length === 0 ? (
+                <p className="text-gray-400 text-sm">No data yet.</p>
+              ) : (
+                <ul className="space-y-4">
+                  {trendingAuthors.map((author, i) => (
+                    <li key={author.authorName} className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-400 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                        {i + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 text-sm truncate">{author.authorName}</p>
+                        <p className="text-xs text-gray-500">
+                          {author.totalLikes} likes · {author.recipeCount} recipe{author.recipeCount !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-            {/* Quick Actions */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <button className="w-full bg-orange-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-orange-600 transition-colors">
-                  Share a Recipe
-                </button>
-                <button className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium hover:bg-gray-200 transition-colors">
-                  Find Friends
-                </button>
-                <button className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium hover:bg-gray-200 transition-colors">
-                  Join Groups
-                </button>
-              </div>
-            </div>
+interface PostCardProps {
+  post: Post;
+  likeCount: number;
+  isLiked: boolean;
+  onLike: () => void;
+}
 
-            {/* Suggested Follows */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Suggested Follows</h3>
-              <div className="space-y-4">
-                {trendingChefs.slice(0, 3).map((chef) => (
-                  <div key={chef.id} className="flex items-center space-x-3">
-                    <img
-                      src={chef.avatar}
-                      alt={chef.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 truncate">{chef.name}</h4>
-                      <p className="text-sm text-gray-500 truncate">{chef.speciality}</p>
-                    </div>
-                    <button
-                      onClick={() => handleFollow(chef.id)}
-                      className={`p-2 rounded-full transition-colors ${
-                        followedUsers.has(chef.id)
-                          ? 'text-gray-400'
-                          : 'text-orange-500 hover:bg-orange-50'
-                      }`}
-                    >
-                      <UserPlus className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+const PostCard: React.FC<PostCardProps> = ({ post, likeCount, isLiked, onLike }) => {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm p-6">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-red-400 flex items-center justify-center text-white text-sm font-bold shrink-0">
+            {post.authorName.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">{post.authorName}</p>
+            <p className="text-xs text-gray-400">{timeAgo(post.createdAt)}</p>
+          </div>
+        </div>
+        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${TYPE_BADGE[post.type] ?? 'bg-gray-100 text-gray-600'}`}>
+          {post.type}
+        </span>
+      </div>
+
+      {/* Content */}
+      <p className="text-gray-700 leading-relaxed mb-4">{post.content}</p>
+
+      {/* Linked recipe card */}
+      {post.recipeId && (
+        <div className="flex gap-3 bg-gray-50 rounded-xl p-3 mb-4">
+          {post.recipeId.image && (
+            <img
+              src={post.recipeId.image}
+              alt={post.recipeId.title}
+              className="w-16 h-16 object-cover rounded-lg shrink-0"
+            />
+          )}
+          <div className="min-w-0">
+            <p className="font-medium text-gray-900 text-sm truncate">{post.recipeId.title}</p>
+            <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+              {post.recipeId.cookTime && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> {post.recipeId.cookTime}
+                </span>
+              )}
+              {post.recipeId.difficulty && <span>{post.recipeId.difficulty}</span>}
+              {post.recipeId.rating > 0 && (
+                <span className="flex items-center gap-1">
+                  <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                  {post.recipeId.rating.toFixed(1)}
+                </span>
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
+        <button
+          onClick={onLike}
+          className={`flex items-center gap-1.5 text-sm transition-colors ${
+            isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+          }`}
+        >
+          <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+          <span>{likeCount}</span>
+        </button>
       </div>
     </div>
   );

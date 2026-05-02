@@ -4,8 +4,9 @@ import Navbar from './pages/Navbar';
 import Homepage from './pages/HomePage';
 import DiscoverPage from './pages/DiscoverPage';
 import CommunityPage from './pages/CommunityPage';
-// import MyRecipesPage from './components/MyRecipesPage';
-import './App.css';
+import GeneratorPage from './pages/Generator';
+import RecipePage from './pages/RecipePage';
+import RecipeFormPage from './pages/RecipeFormPage';
 
 function App() {
   return (
@@ -16,7 +17,10 @@ function App() {
           <Route path="/" element={<Homepage />} />
           <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/community" element={<CommunityPage />} />
-          {/* <Route path="/my-recipes" element={<MyRecipesPage />} /> */}
+          <Route path="/generate" element={<GeneratorPage />} />
+          <Route path="/recipe/:id" element={<RecipePage />} />
+          <Route path="/recipes/new" element={<RecipeFormPage />} />
+          <Route path="/recipes/:id/edit" element={<RecipeFormPage />} />
         </Routes>
       </div>
     </Router>
@@ -24,29 +28,3 @@ function App() {
 }
 
 export default App;
-
-// import { useEffect, useState } from 'react';
-
-// function App() {
-//   const [message, setMessage] = useState('');
-
-//   useEffect(() => {
-//     const baseURL = import.meta.env.VITE_API_URL;
-//     fetch(`${baseURL}/`)
-//       .then((res) => res.text())
-//       .then((data) => setMessage(data))
-//       .catch((err) => {
-//         console.error('API call failed:', err);
-//         setMessage('Failed to connect to backend');
-//       });
-//   }, []);
-
-//   return (
-//     <div style={{ padding: '2rem' }}>
-//       <h1>PantryCraft</h1>
-//       <p>Backend says: {message}</p>
-//     </div>
-//   );
-// }
-
-// export default App;

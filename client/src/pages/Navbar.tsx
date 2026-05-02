@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, ChefHat, Menu, X, User } from 'lucide-react';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
+  const isActive = (path: string) => location.pathname === path;
 
   const navLinks = [
     { path: '/discover', label: 'Discover' },
+    { path: '/generate', label: 'Generator' },
     { path: '/community', label: 'Community' },
-    { path: '/my-recipes', label: 'My Recipes' },
   ];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Navigate to search results or handle search
-      console.log('Searching for:', searchQuery);
+      navigate(`/discover?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      setIsMenuOpen(false);
     }
   };
 
@@ -36,7 +36,7 @@ const Navbar = () => {
               PantryCraft
             </span>
           </Link>
-          
+
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
@@ -54,7 +54,7 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Search Bar - Desktop
+          {/* Search Bar - Desktop */}
           <div className="hidden lg:flex items-center">
             <form onSubmit={handleSearch} className="relative">
               <input
@@ -66,17 +66,17 @@ const Navbar = () => {
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             </form>
-          </div> */}
+          </div>
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4">
-            {/* Search Button - Mobile */}
-            <button className="lg:hidden p-2 text-gray-600 hover:text-orange-600 transition-colors">
-              <Search className="h-5 w-5" />
-            </button>
-
-            {/* Profile/Sign In */}
             <div className="flex items-center space-x-2">
+              <Link
+                to="/recipes/new"
+                className="hidden sm:inline-flex items-center px-4 py-2 rounded-full border border-orange-400 text-orange-600 font-medium text-sm hover:bg-orange-50 transition-colors"
+              >
+                + Share Recipe
+              </Link>
               <button className="hidden sm:flex items-center space-x-2 text-gray-700 hover:text-orange-600 transition-colors">
                 <User className="h-5 w-5" />
                 <span>Profile</span>
@@ -114,7 +114,7 @@ const Navbar = () => {
                   {link.label}
                 </Link>
               ))}
-              
+
               {/* Mobile Search */}
               <div className="px-3 py-2">
                 <form onSubmit={handleSearch} className="relative">

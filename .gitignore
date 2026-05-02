@@ -12,3 +12,5 @@ client/dist/
 # Ignore OS and editor metadata
 .DS_Store
 .vscode/
+
+server/

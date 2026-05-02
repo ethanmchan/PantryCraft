@@ -1,93 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Plus, Heart, Bookmark, MessageCircle, Star, TrendingUp, Users, ChefHat, Sparkles } from 'lucide-react';
+import { Search, Users, ChefHat, Sparkles, TrendingUp } from 'lucide-react';
 import RecipeCard from '../components/RecipeCard';
+
+interface Recipe {
+  _id: string;
+  title: string;
+  author: string;
+  image: string;
+  likes: number;
+  comments: number;
+  cookTime: string;
+  difficulty: string;
+  rating: number;
+  tags: string[];
+}
 
 const Homepage = () => {
   const [ingredients, setIngredients] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [featuredRecipes, setFeaturedRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const featuredRecipes = [
-    {
-      id: '1',
-      title: "Creamy Garlic Pasta",
-      author: "Gordon Ramsay",
-      image: "https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=400&h=300&fit=crop",
-      likes: 245,
-      comments: 18,
-      cookTime: "25 min",
-      difficulty: "Easy",
-      rating: 4.8,
-      tags: ["pasta", "garlic", "cream", "italian"]
-    },
-    {
-      id: '2',
-      title: "Mediterranean Bowl",
-      author: "Jamie Oliver",
-      image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop",
-      likes: 189,
-      comments: 12,
-      cookTime: "15 min",
-      difficulty: "Easy",
-      rating: 4.6,
-      tags: ["healthy", "vegetables", "quinoa", "mediterranean"]
-    },
-    {
-      id: '3',
-      title: "Spicy Thai Curry",
-      author: "Wolf Gang Puck",
-      image: "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=400&h=300&fit=crop",
-      likes: 312,
-      comments: 24,
-      cookTime: "35 min",
-      difficulty: "Medium",
-      rating: 4.9,
-      tags: ["thai", "spicy", "coconut", "curry"]
-    }
-  ];
+  const trendingIngredients = ['Avocado', 'Quinoa', 'Salmon', 'Sweet Potato', 'Kale', 'Chickpeas'];
 
-  const trendingIngredients = ["Avocado", "Quinoa", "Salmon", "Sweet Potato", "Kale", "Chickpeas"];
-
-  // Recipe interaction handlers
-  const handleLike = (recipeId: string) => {
-    console.log('Liked recipe:', recipeId);
-    // TODO: Implement API call to like recipe
-    // Example: await likeRecipe(recipeId);
-  };
-
-  const handleComment = (recipeId: string) => {
-    console.log('Navigate to comments for recipe:', recipeId);
-    // Navigate to recipe detail page with comments section
-    navigate(`/recipe/${recipeId}#comments`);
-  };
-
-  const handleBookmark = (recipeId: string) => {
-    console.log('Bookmarked recipe:', recipeId);
-    // TODO: Implement API call to bookmark recipe
-    // Example: await bookmarkRecipe(recipeId);
-  };
-
-  const handleCardClick = (recipeId: string) => {
-    console.log('Navigate to recipe detail:', recipeId);
-    // Navigate to recipe detail page
-    navigate(`/recipe/${recipeId}`);
-  };
+  useEffect(() => {
+    const baseURL = import.meta.env.VITE_API_URL;
+    fetch(`${baseURL}/api/recipes/featured`)
+      .then((res) => res.json())
+      .then((data) => setFeaturedRecipes(data))
+      .catch((err) => console.error('Failed to load featured recipes:', err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleGenerateRecipe = () => {
     if (ingredients.trim()) {
-      // Navigate to recipe generation page with ingredients
       navigate('/generate', { state: { ingredients: ingredients.trim() } });
     }
   };
 
   const handleTrendingIngredientClick = (ingredient: string) => {
-    // Add trending ingredient to input
-    const currentIngredients = ingredients.trim();
-    const newIngredients = currentIngredients 
-      ? `${currentIngredients}, ${ingredient}` 
-      : ingredient;
-    setIngredients(newIngredients);
+    const current = ingredients.trim();
+    setIngredients(current ? `${current}, ${ingredient}` : ingredient);
+  };
+
+  const handleCardClick = (recipeId: string) => {
+    navigate(`/recipe/${recipeId}`);
+  };
+
+  const handleComment = (recipeId: string) => {
+    navigate(`/recipe/${recipeId}#comments`);
   };
 
   return (
@@ -97,7 +59,7 @@ const Homepage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
             <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
-              Turn Your 
+              Turn Your
               <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent"> Ingredients</span>
               <br />
               Into Magic
@@ -131,9 +93,9 @@ const Homepage = () => {
             {/* Trending Ingredients */}
             <div className="flex flex-wrap justify-center gap-3 mb-12">
               <span className="text-gray-600 font-medium">Trending:</span>
-              {trendingIngredients.map((ingredient, index) => (
+              {trendingIngredients.map((ingredient) => (
                 <button
-                  key={index}
+                  key={ingredient}
                   onClick={() => handleTrendingIngredientClick(ingredient)}
                   className="px-4 py-2 bg-white rounded-full text-sm text-gray-700 hover:bg-orange-100 hover:text-orange-700 transition-colors shadow-sm border border-orange-100"
                 >
@@ -161,7 +123,7 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Featured Recipes - Updated to use RecipeCard component */}
+      {/* Featured Recipes */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -169,24 +131,30 @@ const Homepage = () => {
             <p className="text-xl text-gray-600">Discover what our community is cooking today</p>
           </div>
 
-          {/* Using RecipeCard component instead of hardcoded cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredRecipes.map((recipe) => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                onLike={handleLike}
-                onComment={handleComment}
-                onBookmark={handleBookmark}
-                onCardClick={handleCardClick}
-                showAuthor={true}
-                showInteractions={true}
-                className="transform hover:-translate-y-2 transition-all duration-300"
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="bg-gray-100 rounded-2xl h-80 animate-pulse" />
+              ))}
+            </div>
+          ) : featuredRecipes.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredRecipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe._id}
+                  recipe={recipe}
+                  onComment={handleComment}
+                  onCardClick={handleCardClick}
+                  showAuthor={true}
+                  showInteractions={true}
+                  className="transform hover:-translate-y-2 transition-all duration-300"
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500">No featured recipes yet. Be the first to share one!</p>
+          )}
 
-          {/* View All Recipes Button */}
           <div className="text-center mt-12">
             <Link
               to="/discover"
@@ -199,7 +167,7 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Community Section */}
+      {/* Community CTA */}
       <section className="py-20 bg-gradient-to-r from-orange-500 to-red-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="text-white">
@@ -207,7 +175,7 @@ const Homepage = () => {
             <p className="text-xl mb-8 opacity-90">
               Connect with fellow food enthusiasts, share your creations, and discover new flavors
             </p>
-            
+
             <div className="flex justify-center space-x-12 mb-8">
               <div className="flex items-center space-x-3">
                 <Users className="h-8 w-8" />
@@ -225,11 +193,11 @@ const Homepage = () => {
               </div>
             </div>
 
-            <Link 
-              to="/discover"
+            <Link
+              to="/community"
               className="bg-white text-orange-600 px-8 py-4 rounded-2xl font-semibold hover:bg-orange-50 transition-colors shadow-lg text-lg"
             >
-              Explore Recipes
+              Explore Community
             </Link>
           </div>
         </div>
@@ -238,7 +206,7 @@ const Homepage = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <ChefHat className="h-8 w-8 text-orange-500" />
@@ -248,37 +216,27 @@ const Homepage = () => {
                 Turn your ingredients into culinary masterpieces with our AI-powered recipe generator.
               </p>
             </div>
-            
+
             <div>
-              <h3 className="font-semibold mb-4">Discover</h3>
+              <h3 className="font-semibold mb-4">Explore</h3>
               <ul className="space-y-2 text-gray-400">
                 <li><Link to="/discover" className="hover:text-white transition-colors">Browse Recipes</Link></li>
-                <li><Link to="/categories" className="hover:text-white transition-colors">Categories</Link></li>
-                <li><Link to="/popular" className="hover:text-white transition-colors">Popular</Link></li>
+                <li><Link to="/generate" className="hover:text-white transition-colors">Recipe Generator</Link></li>
+                <li><Link to="/community" className="hover:text-white transition-colors">Community</Link></li>
               </ul>
             </div>
 
             <div>
-              <h3 className="font-semibold mb-4">Community</h3>
+              <h3 className="font-semibold mb-4">Account</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><Link to="/community" className="hover:text-white transition-colors">Join Community</Link></li>
-                <li><Link to="/share" className="hover:text-white transition-colors">Share Recipe</Link></li>
-                <li><Link to="/events" className="hover:text-white transition-colors">Events</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Support</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link to="/help" className="hover:text-white transition-colors">Help Center</Link></li>
-                <li><Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
-                <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link></li>
+                <li><span className="cursor-pointer hover:text-white transition-colors">Sign Up</span></li>
+                <li><span className="cursor-pointer hover:text-white transition-colors">Log In</span></li>
               </ul>
             </div>
           </div>
-          
+
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 PantryCraft. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} PantryCraft. All rights reserved.</p>
           </div>
         </div>
       </footer>

@@ -9,9 +9,10 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Add this line 👇 to include the recipe API route
 const recipeRoutes = require('./routes/recipes');
+const postRoutes = require('./routes/posts');
 app.use('/api/recipes', recipeRoutes);
+app.use('/api/posts', postRoutes);
 
 app.get('/', (req, res) => {
   res.send('PantryCraft backend is live!');
@@ -22,4 +23,7 @@ mongoose.connect(process.env.MONGODB_URI)
     console.log('Connected to MongoDB');
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
-  .catch(err => console.error(err));
+  .catch((err) => {
+    console.error('Failed to connect to MongoDB:', err);
+    process.exit(1);
+  });
